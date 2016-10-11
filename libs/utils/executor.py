@@ -24,6 +24,7 @@ import os
 import re
 import time
 import trappy
+from devlib import TargetError
 
 # Configure logging
 import logging
@@ -273,6 +274,26 @@ class Executor():
         # Configure each required attribute
         group.set(**tc['cgroups']['conf'][kind][name])
 
+    def _setup_files(self, tc):
+        if 'files' not in tc:
+            logging.debug('%14s - Configuration not provided', 'Files')
+            return True
+        for name, value in tc['files'].iteritems():
+            check = True
+            if name.startswith('+/'):
+                check = False
+                name = name[1:]
+            logging.info('%14s - Write(check=%s): \'%s\' -> \'%s\'',
+                         'Files', check, value, name)
+            try:
+                self.target.write_value(name, value, True)
+            except TargetError:
+                logging.info('%14s - Write Failed: \'%s\' -> \'%s\'',
+                         'Files', value, name)
+                if check:
+                    raise
+        return False
+
     def _target_configure(self, tc):
         self._print_header('TargetConfig',
                 r'configuring target for [{}] experiments'\
@@ -280,6 +301,7 @@ class Executor():
         self._setup_kernel(tc)
         self._setup_sched_features(tc)
         self._setup_cpufreq(tc)
+        self._setup_files(tc)
         return self._setup_cgroups(tc)
 
     def _target_conf_flag(self, tc, flag):
