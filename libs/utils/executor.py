@@ -324,19 +324,19 @@ class Executor():
 
     def _setup_files(self, tc):
         if 'files' not in tc:
-            logging.debug('\'files\' Configuration block not provided')
+            self._log.debug('\'files\' Configuration block not provided')
             return True
         for name, value in tc['files'].iteritems():
             check = False
             if name.startswith('!/'):
                 check = True
                 name = name[1:]
-            logging.info('File Write(check=%s): \'%s\' -> \'%s\'',
+            self._log.info('File Write(check=%s): \'%s\' -> \'%s\'',
                          check, value, name)
             try:
                 self.target.write_value(name, value, True)
             except TargetError:
-                logging.info('File Write Failed: \'%s\' -> \'%s\'',
+                self._log.info('File Write Failed: \'%s\' -> \'%s\'',
                          value, name)
                 if check:
                     raise
