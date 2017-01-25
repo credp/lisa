@@ -20,9 +20,13 @@ import logging
 import os
 import select
 
+from subprocess import Popen, PIPE
+from time import sleep
+
 from conf import LisaLogging
-from android import Workload
+from android import System, Workload
 from env import TestEnv
+
 
 class LisaBenchmark(object):
     """
@@ -171,6 +175,8 @@ class LisaBenchmark(object):
         self.log.info('=== TestEnv setup...')
         self.te = TestEnv(self._getBmConf())
         self.target = self.te.target
+        # TODO: Check if TestEnv already provides support for rebooting
+        self._reboot()
 
         self.log.info('=== Initialization...')
         self._getBmKind()
@@ -186,5 +192,71 @@ class LisaBenchmark(object):
 
         self.log.info('=== Finalization...')
         self.benchmarkFinalize()
+
+    def _adb(self, cmd):
+        os.system('adb -s {} {}'.format(self.target.adb_name, cmd))
+
+    def _fastboot(self, cmd):
+        os.system('fastboot -s {} {}'.format(self.target.adb_name, cmd))
+
+
+    def _wait_for_logcat_idle(self, seconds=1):
+        lines = 0
+
+        # Clear logcat
+        # os.system('{} logcat -s {} -c'.format(adb, DEVICE));
+        self._adb('logcat -c')
+
+        # Dump logcat output
+        logcat_cmd = 'adb -s {} logcat'.format(self.target.adb_name)
+        logcat = Popen(logcat_cmd, shell=True, stdout=PIPE)
+        logcat_poll = select.poll()
+        logcat_poll.register(logcat.stdout, select.POLLIN)
+
+        # Monitor logcat until it's idle for the specified number of [s]
+        self.log.info('Waiting for system to be almost idle')
+        self.log.info('   i.e. at least %d[s] of no logcat messages', seconds)
+        while True:
+            poll_result = logcat_poll.poll(seconds * 1000)
+            if not poll_result:
+                break
+            lines = lines + 1
+            line = logcat.stdout.readline(1024)
+
+    def _reboot(self):
+
+        # Reboot the device, if a boot_image has been specified
+        if self.args.boot_image:
+
+            self.log.warning('=== Rebooting...')
+            self.log.warning('Rebooting image to use: %s', self.args.boot_image)
+
+            self.log.debug('Waiting 6[s] to enter bootloader...')
+            self._adb('reboot-bootloader')
+            sleep(6)
+            self._fastboot('boot {}'.format(self.args.boot_image))
+
+            self.log.debug('Waiting 20[s] for boot to start...')
+            sleep(20)
+
+        else:
+            self.log.warning('Device NOT rebooted, using current image')
+
+        # Restart ADB in root mode
+        self._adb('root')
+
+        # TODO add check for kernel SHA1
+
+        # Disable charge via USB
+        self.log.debug('Disabling charge over USB...')
+        self._adb('shell "echo 0 >/sys/class/power_supply/battery/charging_enabled"')
+
+        # Log current kernel version
+        output = self.target.execute('uname -a')
+        self.log.info('Running with kernel:')
+        self.log.info('   %s', output)
+
+        # Wait for the system to complete the boot
+        self._wait_for_logcat_idle()
 
 # vim :set tabstop=4 shiftwidth=4 expandtab
