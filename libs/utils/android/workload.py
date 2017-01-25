@@ -44,13 +44,46 @@ class Workload(object):
         # Set of data reported in output of each run
         self.trace_file = None
         self.nrg_report = None
-        wloads = Workload.availables(self.target)
-        self._log.info('Workloads available on target:')
-        self._log.info('  %s', wloads)
+
+        self._packages = None
+        self._availables = {}
+
+        # Build list of supported workloads available in the target
+        self._check_availables()
 
     def _adb(self, cmd):
         return 'adb -s {} {}'.format(self._target.adb_name, cmd)
 
+    def _check_availables(self):
+        """
+        List the supported android workloads which are available on the target
+        """
+        # Getting the list of installed packages
+        self._packages = self._target.execute('pm list packages').splitlines()
+        self._log.debug('Packages:\n%s', self._packages)
+
+        self._log.debug('Building list of available workloads...')
+        for sc in Workload.__subclasses__():
+            self._log.debug('Checking workload [%s]...', sc.__name__)
+            if 'package:' + sc.package in self._packages:
+                self._availables[sc.__name__.lower()] = sc
+
+        self._log.info('Supported workloads available on target:')
+        self._log.info('  %s', ', '.join(self._availables.keys()))
+
+    def getInstance(self, name):
+        """
+        Get a reference to the specified Android workload
+        """
+        # Initialize list of available workloads
+        if self._packages is None:
+            self._check_availables()
+
+        if name.lower() not in self._availables:
+            self._log.warning('Workload [%s] not available on target', name)
+            return None
+
+        return self._availables[name.lower()](self._te)
 
     def run(self, out_dir, collect='',
             **kwargs):
