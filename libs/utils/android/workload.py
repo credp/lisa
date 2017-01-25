@@ -57,6 +57,25 @@ class Workload(object):
         raise RuntimeError('Not implemeted')
 
     def tracingStart(self):
+        # Start FTrace
+        if 'ftrace' in self.collect:
+            self.trace_file = os.path.join(self.out_dir, 'trace.dat')
+            self._log.info('FTrace START')
+            self._te.ftrace.start()
+        # Start Systrace (mutually exclusive with ftrace)
+        elif 'systrace' in self.collect:
+            self.trace_file = os.path.join(self.out_dir, 'trace.html')
+            # Get the systrace time
+            match = re.search(r'systrace_([0-9]+)', collect)
+            if match:
+                self._trace_time = match.group(1)
+            else:
+                # TODO: must implement a CTRL+C based systrace stopping
+                self._log.warning("Systrace time NOT defined, tracing for 10[s]")
+                self._trace_time = 10
+            self._log.info('Systrace START')
+            self._systrace_output = System.systrace_start(
+                self._te, self.trace_file, self._trace_time)
         # Initialize energy meter results
         if 'energy' in self.collect and self._te.emeter:
             self._te.emeter.reset()
@@ -67,4 +86,20 @@ class Workload(object):
         if 'energy' in self.collect and self._te.emeter:
             self.nrg_report = self._te.emeter.report(self.out_dir)
             self._log.info('Energy meter STOPPED')
+        # Stop FTrace
+        if 'ftrace' in self.collect:
+            self._te.ftrace.stop()
+            self._log.info('FTrace STOP')
+            self._te.ftrace.get_trace(self.trace_file)
+        # Stop Systrace (mutually exclusive with ftrace)
+        elif 'systrace' in self.collect:
+            if not self.systrace_output:
+                self._log.warning('Systrace is not running!')
+            else:
+                self._log.info('Waiting systrace report [%s]...',
+                                 self.trace_file)
+                self.systrace_output.wait()
+        # Dump a platform description
+        self._te.platform_dump(self.out_dir)
+
 # vim :set tabstop=4 shiftwidth=4 expandtab
