@@ -69,24 +69,24 @@ class UiBench(Workload):
         self.collect = collect
 
         # Press Back button to be sure we run the video from the start
-        System.menu(self.target)
-        System.back(self.target)
+        System.menu(self._target)
+        System.back(self._target)
 
         # Close and clear application
-        System.force_stop(self.target, self.package, clear=True)
+        System.force_stop(self._target, self.package, clear=True)
 
         # Set airplane mode
-        System.set_airplane_mode(self.target, on=True)
+        System.set_airplane_mode(self._target, on=True)
 
         # Start the main view of the app which must be running
         # to reset the frame statistics.
-        System.monkey(self.target, self.package)
+        System.monkey(self._target, self.package)
 
         # Force screen in PORTRAIT mode
-        Screen.set_orientation(self.target, portrait=True)
+        Screen.set_orientation(self._target, portrait=True)
 
         # Reset frame statistics
-        System.gfxinfo_reset(self.target, self.package)
+        System.gfxinfo_reset(self._target, self.package)
         sleep(1)
 
         # Clear logcat
@@ -101,11 +101,11 @@ class UiBench(Workload):
         # Parse logcat output lines
         logcat_cmd = self._adb(
                 'logcat ActivityManager:* System.out:I *:S BENCH:*'\
-                .format(self.target.adb_name))
+                .format(self._target.adb_name))
         self._log.info("%s", logcat_cmd)
 
         # Start the activity
-        System.start_activity(self.target, self.package, activity)
+        System.start_activity(self._target, self.package, activity)
         logcat = Popen(logcat_cmd, shell=True, stdout=PIPE)
         while True:
 
@@ -129,16 +129,16 @@ class UiBench(Workload):
 
         # Get frame stats
         self.db_file = os.path.join(out_dir, "framestats.txt")
-        System.gfxinfo_get(self.target, self.package, self.db_file)
+        System.gfxinfo_get(self._target, self.package, self.db_file)
 
         # Close and clear application
-        System.force_stop(self.target, self.package, clear=True)
+        System.force_stop(self._target, self.package, clear=True)
 
         # Go back to home screen
-        System.home(self.target)
+        System.home(self._target)
 
         # Switch back to original settings
-        Screen.set_orientation(self.target, auto=True)
-        System.set_airplane_mode(self.target, on=False)
+        Screen.set_orientation(self._target, auto=True)
+        System.set_airplane_mode(self._target, on=False)
 
 # vim :set tabstop=4 shiftwidth=4 expandtab
