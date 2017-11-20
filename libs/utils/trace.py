@@ -612,13 +612,34 @@ class Trace(object):
         if not self.hasEvents('sched_overutilized'):
             return
         df = self._dfg_trace_event('sched_overutilized')
-        df['start'] = df.index
-        df['len'] = (df.start - df.start.shift()).fillna(0).shift(-1)
-        df.drop('start', axis=1, inplace=True)
+        if not 'sd_span' in df.columns:
+            df['start'] = df.index
+            df['len'] = (df.start - df.start.shift()).fillna(0).shift(-1)
+            df.drop('start', axis=1, inplace=True)
 
-        # Fix the last event, which will have a NaN duration
-        # Set duration to trace_end - last_event
-        df.loc[df.index[-1], 'len'] = self.start_time + self.time_range - df.index[-1]
+            # Fix the last event, which will have a NaN duration
+            # Set duration to trace_end - last_event
+            df.loc[df.index[-1], 'len'] = self.start_time + self.time_range - df.index[-1]
+        else:
+            def _add_overutil_len_multi_sd(row, last_events):
+                span = row.sd_span
+                if span in last_events:
+                    last_start, last_overutilized = last_events[span]
+                else:
+                    last_start, last_overutilized = (0, 0)
+                row['len'] = row.start - last_start
+                if last_overutilized != row.overutilized:
+                    last_events[span] = (row.start, row.overutilized)
+                return row
+            last_events = {}
+            df['start'] = df.index
+            df = df.apply(_add_overutil_len_multi_sd, args=(last_events,), axis=1)
+            df.drop('start', axis=1, inplace=True)
+            for sd in df.sd_span.unique():
+                #Fix the last event, which will have a NaN duration
+                # Set duration to trace_end - last_event
+                df.loc[df[df.sd_span == sd].index[-1], 'len'] = self.start_time + self.time_range - df[df.sd_span == sd].index[-1]
+            self.ftrace.sched_overutilized.data_frame = df
 
         # Build a stat on trace overutilization
         df = self._dfg_trace_event('sched_overutilized')

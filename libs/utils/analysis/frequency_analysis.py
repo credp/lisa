@@ -134,15 +134,19 @@ class FrequencyAnalysis(AnalysisModule):
         # Extract LITTLE and big clusters frequencies
         # and scale them to [MHz]
         if self._little_cpus:
+            l_cpu_id = self._little_cpus[-1]
             lfreq = df[df.cpu == self._little_cpus[-1]]
             lfreq['frequency'] = lfreq['frequency']/1e3
         else:
             lfreq = []
+            l_cpu_id = None
         if self._big_cpus:
-            bfreq = df[df.cpu == self._big_cpus[-1]]
+            b_cpu_id = self._big_cpus[-1]
+            bfreq = df[df.cpu == b_cpu_id]
             bfreq['frequency'] = bfreq['frequency']/1e3
         else:
             bfreq = []
+            b_cpu_id = None
 
         # Compute AVG frequency for LITTLE cluster
         avg_lfreq = 0
@@ -187,7 +191,7 @@ class FrequencyAnalysis(AnalysisModule):
         axes.grid(True)
         axes.set_xticklabels([])
         axes.set_xlabel('')
-        self._trace.analysis.status.plotOverutilized(axes)
+        self._trace.analysis.status.plotOverutilized(axes, b_cpu_id)
 
         axes = pltaxes[1]
         axes.set_title('LITTLE Cluster')
@@ -205,7 +209,7 @@ class FrequencyAnalysis(AnalysisModule):
         axes.set_xlim(self._trace.x_min, self._trace.x_max)
         axes.set_ylabel('MHz')
         axes.grid(True)
-        self._trace.analysis.status.plotOverutilized(axes)
+        self._trace.analysis.status.plotOverutilized(axes, l_cpu_id)
 
         # Save generated plots into datadir
         figname = '{}/{}cluster_freqs.png'\
@@ -313,7 +317,7 @@ class FrequencyAnalysis(AnalysisModule):
                                   drawstyle='steps-post', alpha=0.4)
 
             # Plot overutilzied regions (if signal available)
-            self._trace.analysis.status.plotOverutilized(axes)
+            self._trace.analysis.status.plotOverutilized(axes, cpu_id)
 
             # Finalize plot
             axes.set_xlim(self._trace.x_min, self._trace.x_max)

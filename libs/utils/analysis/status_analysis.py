@@ -59,15 +59,38 @@ class StatusAnalysis(AnalysisModule):
         # df = df.reset_index()\
         #         .drop_duplicates(subset='Time', keep='last')\
         #         .set_index('Time')
-
-        return df[['len', 'overutilized']]
+        columns = ['len', 'overutilized']
+        if 'sd_span' in df.columns:
+            columns.append('sd_span')
+        return df[columns]
 
 
 ###############################################################################
 # Plotting Methods
 ###############################################################################
 
-    def plotOverutilized(self, axes=None):
+    def cpulist_to_array(self, cpulist):
+        """
+        Convert a kernel-formatted cpulist to an array of cpu_ids
+        """
+        array = None
+        try:
+            array = []
+            groups=cpulist.split(',')
+            for g in groups:
+                g_range = g.split('-')
+                if len(g_range) == 1:
+                    array.append(g_range[0])
+                else:
+                    start = int(g_range[0])
+                    end = int(g_range[1])
+                    for i in range(start, end+1, 1):
+                        array.append(str(i))
+        except:
+            self._log.error("Unable to parse cpulist {}".format(cpulist))
+        return array
+
+    def plotOverutilized(self, axes=None, cpu_id=None):
         """
         Draw a plot that shows intervals of time where the system was reported
         as overutilized.
@@ -85,9 +108,6 @@ class StatusAnalysis(AnalysisModule):
 
         df = self._dfg_overutilized()
 
-        # Compute intervals in which the system is reported to be overutilized
-        bands = [(t, df['len'][t], df['overutilized'][t]) for t in df.index]
-
         # If not axis provided: generate a standalone plot
         if not axes:
             gs = gridspec.GridSpec(1, 1)
@@ -100,11 +120,51 @@ class StatusAnalysis(AnalysisModule):
             axes.set_xlabel('Time [s]')
             axes.grid(True)
 
-        # Otherwise: draw overutilized bands on top of the specified plot
-        for (start, delta, overutilized) in bands:
-            if not overutilized:
-                continue
-            end = start + delta
-            axes.axvspan(start, end, facecolor='r', alpha=0.1)
+        # Compute intervals in which the system is reported to be overutilized
+        if not 'sd_span' in df.columns:
+            # this trace has whole-system overutilized
+            bands = [(t, df['len'][t], df['overutilized'][t]) for t in df.index]
+            # plot the bands
+            for (start, delta, overutilized) in bands:
+                if not overutilized:
+                    continue
+                end = start + delta
+                axes.axvspan(start, end, facecolor='r', alpha=0.1)
+        else:
+            # this trace has per-sched-domain overutilization
+            # only show overutilized status when a domain includes the
+            # cpu we are passing
+            sd_spans = list(df.sd_span.unique())
+            # sort the bands by the number of CPUs in the group
+            sd_spans.sort(key=lambda x: len(self.cpulist_to_array(x)))
+            # try to match colors across multiple graphs from same trace
+            face={}
+            colors=['r','g','b']
+            color_idx = 0
+            for span in sd_spans:
+                face[span] = colors[color_idx % len(colors)]
+                color_idx += 1
+                array = self.cpulist_to_array(span)
+                if not array:
+                   continue
+                if cpu_id and str(cpu_id) not in array:
+                   self._log.warning("Plotting for CPU {}: Skipping overutilized data for {}".format(cpu_id, span))
+                   continue
+                bands = [(t, df.loc[t]['len'], df.loc[t]['overutilized']) for t in df[df.sd_span == span].index]
+
+                self._log.warning('cpu_id {} : span {} is color {}'.format(cpu_id, span, face[span]))
+                for (start, delta, overutilized) in bands:
+                    try:
+                        if not overutilized:
+                            continue
+                    except ValueError:
+                        # If we have multiple entries with the same index we get here
+                        self._log.warning('multiple overutilized events at {}'.format(start))
+                        delta = delta.iloc[0]
+                        overutilized = overutilized.iloc[0]
+                        if not overutilized:
+                            continue
+                    end = start + delta
+                    axes.axvspan(start, end, facecolor=face[span], alpha=0.1)
 
 # vim :set tabstop=4 shiftwidth=4 expandtab
