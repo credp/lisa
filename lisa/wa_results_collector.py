@@ -369,7 +369,7 @@ class WaResultsCollector(Loggable):
             extra_df['iteration'] = iteration
             extra_df['id'] = job_id
             extra_df['tag'] = tag
-            extra_df['test'] = test
+            #extra_df['test'] = test
             # Collect all these DFs to merge them in one go at the end.
             extra_dfs.append(extra_df)
 
