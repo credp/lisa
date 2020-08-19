@@ -371,8 +371,8 @@ function _lisa-jupyter-start {
     if [[ -f "$PIDFILE" ]] && pgrep -F "$PIDFILE" >/dev/null; then
         echo "Server already running:"
         echo "  " "$(cat $URLFILE)"
-        xdg-open "$(cat $URLFILE)"
-        return 1
+        xdg-open "$(cat $URLFILE)" || true
+        return 0
     fi
 
     # Check required port is available (e.g. Vagrant could using the same port)
