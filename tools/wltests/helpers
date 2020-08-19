@@ -196,12 +196,15 @@ adb_flash_modules() {
 		return $EIO
 	fi
 
+	# Some cables took a long time to come back up; insert a delay
+	sleep 3
+
 	# Verity must be disabled one time, right after the first boot, once a
 	# new set of stock images has been flashed on the device.
 	# This check is just there to ensure we can remount root rw, otherwise
 	# wltests will abort and the device must be rebooted by hand.
 	c_info "Checking that verity is disabled..."
-	OUTPUT="$($ADB disable-verity)"
+	OUTPUT="$($ADB wait-for-device disable-verity)"
 	echo
 	echo "$OUTPUT"
 	echo
