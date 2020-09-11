@@ -1,6 +1,41 @@
 #!/bin/bash
+
+SCRIPT_DIR="$(dirname $(realpath -s $0))"
+BASE_DIR="$SCRIPT_DIR/../.."
+source "${BASE_DIR}/helpers"
+source "${PLATFORM_PATH}/definitions"
+
 cd "$KERNEL_SRC"
 
 # SKIP_MRPROPER=y saves a lot of time
 # SKIP_CP_KERNEL_HDR=y because we don't use them
-SKIP_MRPROPER=y SKIP_CP_KERNEL_HDR=y ./build/build.sh || exit -$?
+
+BUILD_OUT_DIR="$OUT_DIR_COMMON/$BRANCH"
+BUILD_DIST_DIR="$OUT_DIR_COMMON/$BRANCH/dist"
+
+# Verify if the build already exists, if so
+# skip rebuilding
+
+# Get sha for the git bundle of the current repo
+BUNDLE_FILE="$BRANCH".bundle
+c_info "Generating git bundle"
+# Ignore potetnial failures with verifying the previous builds
+# If any occurs the build will be triggered from scratch
+git --git-dir="$KERNEL_SRC/$REPO_KERNEL_PATH/.git" bundle create "$BUNDLE_FILE" "$KERNEL_BRANCH" &>/dev/null
+
+BUNDLE_SHA=$(sha256sum $BUNDLE_FILE | cut -d ' ' -f 1)
+c_info "Git bundle sha: [$BUNDLE_SHA]"
+
+if [[ -d "$BUILD_OUT_DIR"  && -d "$BUILD_DIST_DIR" ]]; then
+	# Compare bundle files
+	if [[ -f "$BUILD_OUT_DIR"/"$BUNDLE_FILE" ]]; then
+		 echo "$BUNDLE_SHA" "$BUILD_OUT_DIR/$BUNDLE_FILE" | sha256sum --check --status
+		 RESULT=$?
+		 [ $RESULT -eq $OK ] && c_info "Reusing existing images" && exit $RESULT
+	fi
+
+fi
+
+OUT_DIR="$BUILD_OUT_DIR" DIST_DIR="$BUILD_DIST_DIR" SKIP_MRPROPER=y SKIP_CP_KERNEL_HDR=y ./build/build.sh || exit -$?
+# Copy the bundle for future reference
+mv "$BUNDLE_FILE" "$BUILD_OUT_DIR"/ || exit -$?
