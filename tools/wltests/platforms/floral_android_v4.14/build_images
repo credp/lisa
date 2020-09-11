@@ -36,6 +36,6 @@ if [[ -d "$BUILD_OUT_DIR"  && -d "$BUILD_DIST_DIR" ]]; then
 
 fi
 
-OUT_DIR="$BUILD_OUT_DIR" DIST_DIR="$BUILD_DIST_DIR" SKIP_MRPROPER=y SKIP_CP_KERNEL_HDR=y ./build/build.sh || exit -$?
+OUT_DIR="$BUILD_OUT_DIR" DIST_DIR="$BUILD_DIST_DIR" SKIP_MRPROPER=y SKIP_CP_KERNEL_HDR=y SKIP_DEFCONFIG=y ./build/build.sh || exit -$?
 # Copy the bundle for future reference
 mv "$BUNDLE_FILE" "$BUILD_OUT_DIR"/ || exit -$?
