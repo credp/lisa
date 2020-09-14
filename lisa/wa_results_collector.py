@@ -27,6 +27,7 @@ import subprocess
 import logging
 import warnings
 import sqlite3
+import glob
 
 from scipy.stats import ttest_ind
 import matplotlib.cm as cm
@@ -199,11 +200,14 @@ class WaResultsCollector(Loggable):
             if not os.path.isdir(dir) or not wa_dirs_re.search(subdir):
                 continue
 
-            # WA3 results dirs contains a __meta directory at the top level.
-            if '__meta' not in os.listdir(dir):
+            # WA3 results dirs contains a __meta directory
+            # Depending on the branch name, it could be in a sub directory
+            dir = glob.glob(dir + "/**/__meta", recursive=True)
+            if not len(dir):
                 logger.warning('Ignoring {}, does not contain __meta directory')
                 continue
 
+            dir = os.path.dirname(dir[0])
             dirs.append(dir)
 
         return dirs
