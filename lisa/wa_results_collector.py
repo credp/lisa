@@ -615,14 +615,13 @@ class WaResultsCollector(Loggable):
         """
         Find the SHA1 of the kernel that a WA3 run was run against
         """
-        kver = self._wa_get_kernel_version(wa_dir)
-        if kver.sha1 is not None:
-            return kver.sha1
+        #kver = self._wa_get_kernel_version(wa_dir)
+        #if kver.sha1 is not None:
+        #    return kver.sha1
 
         # Couldn't get the release sha1, default to reading it from the
         # directory name built by test_series
-        res_dir = os.path.basename(wa_dir)
-        match = re.search(WaResultsCollector.RE_WLTEST_DIR, res_dir)
+        match = re.search(WaResultsCollector.RE_WLTEST_DIR, wa_dir)
         if match:
             return match.group("sha1")
 
