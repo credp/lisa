@@ -37,16 +37,6 @@ sections:
 workloads:
 
 ################################################################################
-# Homescreen
-# Sit on the homescreen for 15 seconds
-  - name: homescreen
-    id: homescreen
-    classifiers:
-       tag: sit_15s
-    workload_parameters:
-      duration: 15
-
-################################################################################
 # Exoplayer
 
 # Play 30 seconds of a video with Exoplayer - this is the basis for the
@@ -71,6 +61,16 @@ workloads:
       version: 2.4
       format: "ogg_128kbps"
       duration: 30
+
+################################################################################
+# Homescreen
+# Sit on the homescreen for 15 seconds
+  - name: homescreen
+    id: homescreen
+    classifiers:
+       tag: sit_15s
+    workload_parameters:
+      duration: 15
 
 ################################################################################
 # PCMark
