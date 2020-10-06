@@ -173,6 +173,19 @@ class WaResultsCollector(Loggable):
                         symref = get_commit_message(kernel_repo_path, sha1)
                     except subprocess.CalledProcessError:
                         symref = sha1
+                except subprocess.CalledProcessError:
+                    p = re.compile("([\da-fA-F]+)_(.*)")
+                    m = p.match(sha1)
+                    if m:
+                        sha1 = m.group(1)
+                        try:
+                            symref = find_shortest_symref(kernel_repo_path, sha1)
+                        except ValueError:
+                            try:
+                                symref = get_commit_message(kernel_repo_path, sha1)
+                            except subprocess.CalledProcessError:
+                                symref = sha1
+
                 kernel_refs[sha1] = symref
             else:
                 kernel_refs[sha1] = sha1
