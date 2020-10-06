@@ -43,7 +43,6 @@ from lisa.git import find_shortest_symref, get_commit_message
 from lisa.utils import Loggable, memoized
 from lisa.datautils import series_integrate, series_mean
 
-
 class WaResultsCollector(Loggable):
     """
     Collects, analyses and visualises results from multiple WA3 directories
@@ -161,6 +160,8 @@ class WaResultsCollector(Loggable):
             df_list.append(self._read_wa_dir(wa_dir))
         df = df.append(df_list)
 
+        logger.info(df)
+
         kernel_refs = {}
         for sha1 in df['kernel_sha1'].unique():
             if sha1 is None:
@@ -174,9 +175,11 @@ class WaResultsCollector(Loggable):
                     except subprocess.CalledProcessError:
                         symref = sha1
                 except subprocess.CalledProcessError:
+                    logger.info("Failed when calling find_shortest_symref on {}".format(sha1))
                     p = re.compile("([\da-fA-F]+)_(.*)")
                     m = p.match(sha1)
                     if m:
+                        logger.info("Looking for {} instead".format(m.group(1)))
                         sha1 = m.group(1)
                         try:
                             symref = find_shortest_symref(kernel_repo_path, sha1)
@@ -629,7 +632,10 @@ class WaResultsCollector(Loggable):
         Find the SHA1 of the kernel that a WA3 run was run against
         """
         kver = self._wa_get_kernel_version(wa_dir)
+        logger = self.get_logger()
+        logger.info("kver = {}".format(kver))
         if kver.sha1 is not None:
+            logger.info("Using kver.sha1")
             return kver.sha1
 
         # Couldn't get the release sha1, default to reading it from the
@@ -637,6 +643,7 @@ class WaResultsCollector(Loggable):
         res_dir = os.path.basename(wa_dir)
         match = re.search(WaResultsCollector.RE_WLTEST_DIR, res_dir)
         if match:
+            logger.info("matched for match.group[\'sha1\'] = {}".format(match.group("sha1")))
             return match.group("sha1")
 
         # Git describe doesn't always produce a sha1
