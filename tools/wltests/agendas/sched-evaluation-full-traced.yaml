@@ -14,7 +14,7 @@ global:
   # instrument (an example configuration is provided in this repo).
   instrumentation: [energy_measurement, trace-cmd, dmesg]
   # Do everything 5 times, if not otherwise specified by the specific workload
-  iterations: 5
+  iterations: 1
 
   # To aid reproducibility and try to reduce noise in power measurements,
   # minimise the screen brightness and set airplane mode on.
@@ -79,7 +79,7 @@ workloads:
     id: pcmark
     classifiers:
        tag: single
-    iterations: 10
+    iterations: 1
     runtime_parameters:
       airplane_mode: false
 
@@ -92,7 +92,7 @@ workloads:
        tag: iter_30
     runtime_parameters:
       airplane_mode: false
-    iterations: 10
+    iterations: 1
 
 ################################################################################
 # Jankbench
@@ -103,7 +103,7 @@ workloads:
       tag: iter_30
     workload_parameters:
       test_ids: list_view
-    iterations: 30
+    iterations: 1
 
   - name: jankbench
     id: jankbench_image_list_view
@@ -111,7 +111,7 @@ workloads:
       tag: iter_30
     workload_parameters:
       test_ids: image_list_view
-    iterations: 30
+    iterations: 1
 
   - name: jankbench
     id: jankbench_shadow_grid
@@ -119,7 +119,7 @@ workloads:
       tag: iter_30
     workload_parameters:
       test_ids: shadow_grid
-    iterations: 30
+    iterations: 1
 
   - name: jankbench
     id: jankbench_low_hitrate_text
@@ -127,7 +127,7 @@ workloads:
       tag: iter_30
     workload_parameters:
       test_ids: low_hitrate_text
-    iterations: 30
+    iterations: 1
 
   - name: jankbench
     id: jankbench_edit_text
@@ -135,4 +135,4 @@ workloads:
       tag: iter_30
     workload_parameters:
       test_ids: edit_text
-    iterations: 30
+    iterations: 1
