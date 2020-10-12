@@ -17,6 +17,7 @@
 # limitations under the License.
 #
 
+set -x
 ################################################################################
 # Other internal configurations
 ################################################################################
@@ -433,12 +434,11 @@ if [ ! -z $WA_AGENDA ]; then
 	# can be required.
 	if [ "x$EMETER" == "xACME" ]; then
 		config_emeter_acme
-		TEST_CMD="wa run -f -d \"$TEST_CMD_RESULTS\" -c \"$WA_LOCAL_CONF\" \"$WA_AGENDA\""
 	fi
 	if [ "x$EMETER" == "xMONSOON" ]; then
 		config_emeter_monsoon
-		TEST_CMD="wa run -f -d \"$TEST_CMD_RESULTS\" -c \"$WA_LOCAL_CONF\" \"$WA_AGENDA\""
 	fi
+	TEST_CMD="wa run -f -d \"$TEST_CMD_RESULTS\" -c \"$WA_LOCAL_CONF\" \"$WA_AGENDA\""
 fi
 
 # Prepare ADB and FASTBOOT commands to target the specified device
@@ -460,6 +460,9 @@ case $EMETER in
 	;;
 'MONSOON')
 	EMETER_CONF="MONSOON (all defaults)"
+	;;
+'NONE')
+	EMETER_CONF="No Energy Meter. EMETER=NONE"
 	;;
 *)
 	c_error "Energy meter [EMETER=$EMETER] not supported"
@@ -504,6 +507,8 @@ usb_disconnect() {
 		# not supported for now
 		c_warning "Energy meter $EMETER does not support usb_disconnect"
 		;;
+	'NONE')
+		;;
 	*)
 		c_error "Energy meter $EMETER not supported"
 		exit $EINVAL
@@ -522,6 +527,8 @@ usb_connect() {
 	'MONSOON')
 		# not supported for now
 		c_warning "Energy meter $EMETER does not support usb_connect"
+		;;
+	'NONE')
 		;;
 	*)
 		c_error "Energy meter $EMETER not supported"
