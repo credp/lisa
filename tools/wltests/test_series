@@ -1029,6 +1029,9 @@ printf "\n%80s\n\n" | tr " " "="
 # If the target isn't connected at the start, bail out
 device_connected || exit 1
 
+# Try to get into adb mode
+enter_adb
+
 # Test each commit
 COMMIT_ID=1
 # Here we read from an arbitrary file descriptor 10 to avoid overlaps with
