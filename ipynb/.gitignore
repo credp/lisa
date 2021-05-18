@@ -1,0 +1,4 @@
+# Ignore everything in the scratchpad directory
+scratchpad/*
+# Except the file to keep the folder existing
+!scratchpad/.keep
